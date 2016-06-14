@@ -4,24 +4,28 @@ char *guide[]={
 	"state",
 	"action",
 	"position",
-	"tracetable"
+	"tracetable",
+      "getpos"
 };
 int guide_msg_type[]={
 	MSG_TYPE( CATEGORY_GUIDE, STATE),
 	MSG_TYPE( CATEGORY_GUIDE, ACTION),
 	MSG_TYPE( CATEGORY_GUIDE, POSITION),
-	MSG_TYPE( CATEGORY_GUIDE, TRACETABLE)
+	MSG_TYPE( CATEGORY_GUIDE, TRACETABLE),
+	MSG_TYPE( CATEGORY_GUIDE, GETPOS)
 };
 char *state_process(char *data);
 char *action_process(char *data);
 char *position_process(char *data);
 char *tracetable_process(char *data);
+char *getpos(char *data);
 
 char *(*(guide_fun[]))(char *)={
 	state_process,
 	action_process,
 	position_process,
-	tracetable_process
+	tracetable_process,
+      getpos
 };
 
 char *state_process(char *data)
@@ -321,6 +325,31 @@ char *tracetable_process(char *data)
     json_value_free( val );
 	return response;
 }
+char *getpos(char *data)
+{
+    JSON_Value *val = NULL;
+    JSON_Object *object = NULL;
+    char *response= NULL;
+    logd("getpos\n");
+    basepos_t *basepos;
+
+    basepos = (basepos_t*)data;
+    val = json_value_init_object();
+    object = json_value_get_object( val );
+    if ( !object ){
+        json_value_free( val );
+        loge( "json_value_get_object error\n" );
+        return NULL;
+    }
+    json_object_set_number(object,"hgt",basepos->hgt);
+    json_object_set_number(object,"hgt",basepos->lat);
+    json_object_set_number(object,"hgt",basepos->lon);
+    response = json_serialize_to_string( val );
+
+    json_value_free( val );
+    return response;
+}
+
 int get_receiver_guide_cmd__parser( FCGX_Request *pstWebRequest )
 {
     char *pstrDat          =  NULL;
@@ -364,7 +393,7 @@ int get_receiver_guide_cmd__parser( FCGX_Request *pstWebRequest )
         return ERR;
     }
 	
-    logd("get config=%s\n",pstrDat);
+    logd("get guide=%s\n",pstrDat);
     	//while(1);
 	char *(*pguide_fun)(char *) = NULL;
 	logd("sizeof:%d\n",sizeof(guide)/sizeof(guide[0]));
@@ -373,18 +402,24 @@ int get_receiver_guide_cmd__parser( FCGX_Request *pstWebRequest )
 		if(strcmp(pstrDat,guide[i]) == 0)//find the string
 		{
 			logd("find string:%s\n",pstrDat);
+                  logd("send\n");
 			cgi_send_massage(guide_msg_type[i],&msg_id, pstrDat, strlen( pstrDat ) );
+                  logd("receive\n");
 			cgi_receive_response_massage( msg_id, &stRspMsgHead, &pData );
+                  logd("guide_fun\n");
 			pguide_fun = guide_fun[i];
-			if(pguide_fun)
+			if(pguide_fun){
+                      logd("response_string\n");
 				response_string = pguide_fun(pData);
-			else
+                  }
+			else{
 				loge("get guide_fun err\n");
+                  }
 		}
 	}
 	
     
-    
+      logd("fprintf\n");
     FCGX_FPrintF( pstWebRequest->out,
                   HTTP_CONENT_HEAD
                   "%s", response_string );

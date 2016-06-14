@@ -64,13 +64,13 @@ typedef enum{
     STATE,                           /*状态栏     */
     ACTION,                          /*活动栏     */
     POSITION,                        /*位置       */
-    TRACETABLE                      /*跟踪表      */
+    TRACETABLE,                 /*跟踪表      */
+    GETPOS                         /*获得当前坐标*/
 }operation_code_guide_t;
 
 typedef enum{
     SETROV,                         /*设置为移动站*/
     SETBASEPOS,                     /*设置基站坐标*/
-    GETPOS,                         /*获得当前坐标*/
     ENGINESET,                      /*引擎设置    */
     ELESET,                         /*高度截止角设置*/
     SATSET,                         /*卫星设置    */
